@@ -55,7 +55,7 @@
                 rolesList.classList.add("list-unstyled");
                 user.userPermissionList.forEach(function (permission) {
                     const roleItem = document.createElement("li");
-                    roleItem.textContent = permission.permission_role;
+                    roleItem.textContent = permission.permissionRole;
                     rolesList.appendChild(roleItem);
                 });
                 rolesCell.appendChild(rolesList);
