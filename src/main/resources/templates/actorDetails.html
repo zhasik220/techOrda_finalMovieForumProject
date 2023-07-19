@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="main_layout.html">
+<div layout:fragment="siteContent">
+    <h1 class="text-center">About Actor</h1>
+    <div class="row" id="actor_info_div">
+        <div class="col-12">
+            <h4 id="actor_name"></h4>
+            <h4 id="actor_info"></h4>
+        </div>
+    </div>
+
+    <h1 class="text-center mt-5">Movies</h1>
+    <div class="row" id="movie_list_div">
+    </div>
+
+    <div class="text-center mt-5" id="no_movies_message" style="display: none;">
+        <h4>No movies with the current actor</h4>
+    </div>
+
+    <script type="text/javascript">
+        // Get the actorId from the URL
+        var url = new URL(window.location.href);
+        var actorId = url.pathname.split("/").pop();
+
+        loadActorInfo();
+        loadMovies();
+
+        function loadActorInfo() {
+            const httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", "/api/actor/" + actorId, true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    var actor = JSON.parse(httpRequest.responseText);
+                    document.getElementById("actor_name").innerText = "Full Name:" + actor.actorName + " " + actor.actorSurname;
+                    document.getElementById("actor_info").innerText = "Age: " + actor.actorAge;
+                }
+            };
+            httpRequest.send();
+        }
+
+        function loadMovies() {
+            const httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", "/api/movie/find-actor?actorId=" + actorId, true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    var movieList = JSON.parse(httpRequest.responseText);
+                    var cardContent = "";
+
+                    if (movieList.length > 0) {
+                        for (var i = 0; i < movieList.length; i++) {
+                            cardContent += "<div class=\"col-3 my-3\">";
+                            cardContent += "<div class=\"card border-dark my-3 mx-3 h-100 d-flex flex-column\">";
+                            cardContent += "<img src=\"/img/movie_background.jpg\" class=\"card-img-top\">";
+                            cardContent += "<div class=\"card-body d-flex flex-column\">";
+                            cardContent += "<h6>" + movieList[i].movieTitle + "</h6>";
+
+                            var genres = movieList[i].movieGenres.map(function (genre) {
+                                return genre.genreName;
+                            }).join(", ");
+
+                            cardContent += "<p class=\"card-text\" style='font-size: 14px;'>" +
+                                movieList[i].movieYear + ", " +
+                                movieList[i].movieCountry.countryName + ", " +
+                                genres +
+                                "</p> ";
+
+                            cardContent += "<a href=\"/movie_details/" + movieList[i].id + "\" " +
+                                "class=\"btn btn-primary mt-auto\">" +
+                                "About Movie</a>";
+
+                            cardContent += "</div>";
+                            cardContent += "</div>";
+                            cardContent += "</div>";
+                        }
+
+                        document.getElementById("movie_list_div").innerHTML = cardContent;
+                    } else {
+                        document.getElementById("no_movies_message").style.display = "block";
+                    }
+                }
+            };
+            httpRequest.send();
+        }
+    </script>
+</div>
+</html>

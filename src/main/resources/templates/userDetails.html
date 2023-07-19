@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="main_layout.html">
+<div layout:fragment="siteContent">
+    <div class="container">
+        <h2 class="text-center">User Details</h2>
+        <div class="alert alert-danger" id="errorUserNotFound" style="display: none;">Error: User Not Found</div>
+
+        <div class="row">
+            <div class="col-6 mx-auto">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="card-title">User Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group row">
+                            <label for="email" class="col-sm-3 col-form-label">Email:</label>
+                            <div class="col-sm-9">
+                                <input type="email" class="form-control" id="email" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="fullName" class="col-sm-3 col-form-label">Full Name:</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="fullName" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="roles" class="col-sm-3 col-form-label">Roles:</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="roles" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="blocked" class="col-sm-3 col-form-label">Blocked:</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="blocked" readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModal">Edit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editModalLabel">Edit User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="editRoles">Roles:</label>
+                        <select id="editRoles" multiple></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editBlocked">Blocked:</label>
+                        <select class="form-select" id="editBlocked">
+                            <option value="true">True</option>
+                            <option value="false">Fasle</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveChanges()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var url = new URL(window.location.href);
+        var userId = url.pathname.split("/").pop();
+        loadUserDetails();
+        loadPermissionList();
+
+        function loadUserDetails() {
+            const httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", `http://localhost:8080/api/user/${userId}`, true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE) {
+                    if (httpRequest.status === 200) {
+                        user = JSON.parse(httpRequest.responseText);
+                        populateUserDetails(user);
+                    } else {
+                        document.getElementById("errorUserNotFound").style.display = "block";
+                    }
+                }
+            };
+            httpRequest.send();
+        }
+
+        function populateUserDetails(user) {
+            document.getElementById("email").value = user.email;
+            document.getElementById("fullName").value = user.fullName;
+            document.getElementById("roles").value = user.userPermissionList.map(role => role.permissionRole).join(", ");
+            if (user.isBlocked) {
+                document.getElementById("blocked").value = "true";
+            } else {
+                document.getElementById("blocked").value = "false";
+            }
+
+            var isBlocked = user.isBlocked; // Получите значение переменной user.isBlocked
+            var selectElement = document.getElementById("editBlocked"); // Получите элемент select по его id
+            // Переберите все опции внутри элемента select
+            for (var i = 0; i < selectElement.options.length; i++) {
+                var option = selectElement.options[i];
+
+                // Сравните значение опции с переменной isBlocked
+                if (option.value === String(isBlocked)) {
+                    option.selected = true; // Установите атрибут selected на соответствующей опции
+                    break; // Прервите цикл, так как значение найдено
+                }
+            }
+
+            preselectUserRoles(user);
+
+            var selectedRoles = user.userPermissionList.map(function (per) {
+                return per.id.toString();
+            });
+            $('#editModal').on('show.bs.modal', function () {
+                $('#editRoles').val(selectedRoles).trigger('change');
+            });
+
+        }
+
+        function preselectUserRoles(user) {
+            var editRolesSelect = $('#editRoles');
+            var selectedRoles = user.userPermissionList.map(role => role.id);
+            editRolesSelect.val(selectedRoles);
+            editRolesSelect.trigger('change');
+        }
+
+
+        function loadPermissionList() {
+            const httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", "/api/permission/get-permission-list", true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    let permissionList = JSON.parse(httpRequest.responseText);
+                    populatePermission(permissionList);
+                    initializePermissionSelect();
+                }
+            }
+            httpRequest.send();
+        }
+
+        function populatePermission(permissionList) {
+            var permissionSelectElement = document.getElementById("editRoles");
+            permissionList.forEach(function (per) {
+                var option = new Option(per.permissionRole, per.id);
+                permissionSelectElement.appendChild(option);
+            });
+        }
+
+        function initializePermissionSelect() {
+            $('#editRoles').select2({
+                placeholder: "Select Roles",
+                allowClear: true,
+                width: '100%',
+                dropdownParent: $('#editRoles').parent()
+            });
+        }
+
+        function saveChanges() {
+            var email = user.email;
+            var selectRoles = document.getElementById("editRoles");
+            var roles = Array.from(selectRoles.selectedOptions)
+                .map(function (option) {
+                    return {id: parseInt(option.value)};
+                });
+            var blocked = document.getElementById('editBlocked').value;
+            var editedUser = {
+                email: email,
+                userPermissionList: roles,
+                isBlocked: blocked
+            };
+
+            if (roles.length === 0) {
+                alert('Please select at least one role.');
+                return;
+            }
+            var httpRequest = new XMLHttpRequest();
+            httpRequest.open("PUT", "http://localhost:8080/api/user", true);
+            httpRequest.setRequestHeader("Content-Type", "application/json");
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    var editModal = document.getElementById('editModal');
+                    var bootstrapModal = bootstrap.Modal.getInstance(editModal);
+                    bootstrapModal.hide();
+                    loadUserDetails();
+                }
+            };
+            console.log(editedUser)
+            httpRequest.send(JSON.stringify(editedUser));
+        }
+
+
+    </script>
+</div>
+</html>

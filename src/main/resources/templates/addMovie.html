@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="main_layout.html">
+<div layout:fragment="siteContent">
+    <div class="row">
+        <h2>Add Movie</h2>
+        <div class="mb-3">
+            <label for="movie_title" class="form-label">Title:</label>
+            <input type="text" class="form-control" id="movie_title" required>
+        </div>
+        <div class="mb-3">
+            <label for="movie_year" class="form-label">Year:</label>
+            <input type="number" class="form-control" id="movie_year" min="1900" max="2023" required>
+        </div>
+        <div class="mb-3">
+            <label for="movie_country" class="form-label">Country:</label>
+            <select class="form-control" id="movie_country" required>
+            </select>
+        </div>
+        <div class="mb-3 w-25">
+            <label class="form-label">Duration:</label>
+            <div class="input-group">
+                <input type="number" class="form-control" id="movie_duration_hours" placeholder="Hours" min="0">
+                <span class="input-group-text">h</span>
+                <input type="number" class="form-control" id="movie_duration_minutes" placeholder="Minutes" min="0"
+                       max="59">
+                <span class="input-group-text">min</span>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="genre_list" class="form-label">Genres:</label>
+            <div id="genre_list">
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="actor_list" class="form-label">Actors:</label>
+            <select class="form-control" id="actor_list" multiple>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="movie_director" class="form-label">Director:</label>
+            <select class="form-control" id="movie_director" required>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="movie_description" class="form-label">Description:</label>
+            <textarea class="form-control" id="movie_description" rows="5" required></textarea>
+        </div>
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary" onclick="addMovie()">Add Movie</button>
+        </div>
+    </div>
+    <script type="text/javascript">
+
+        loadProducerList();
+        loadGenreList();
+        loadActorList();
+        loadCountryList()
+
+        function loadProducerList() {
+            const httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", "/api/producer/get-producer-list", true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    let directorList = JSON.parse(httpRequest.responseText);
+                    populateDirectorList(directorList);
+                }
+            }
+            httpRequest.send();
+        }
+
+        function loadCountryList() {
+            const httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", "/api/country/get-country-list", true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    let countryList = JSON.parse(httpRequest.responseText);
+                    populateCountryList(countryList);
+                }
+            }
+            httpRequest.send();
+        }
+
+        function populateCountryList(countryList) {
+            var selectElement = document.getElementById("movie_country");
+            countryList.forEach(function (country) {
+                var option = new Option(country.countryName, country.id);
+                selectElement.appendChild(option);
+            });
+        }
+
+        function populateDirectorList(directorList) {
+            var selectElement = document.getElementById("movie_director");
+            directorList.forEach(function (director) {
+                var option = document.createElement("option");
+                option.value = director.id;
+                option.text = director.directorName + " " + director.directorSurname;
+                selectElement.appendChild(option);
+            });
+        }
+
+
+        function loadGenreList() {
+            const httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", "/api/genre/get-genre-list", true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    let genreList = JSON.parse(httpRequest.responseText);
+                    populateGenreList(genreList);
+                }
+            }
+            httpRequest.send();
+        }
+
+        function populateGenreList(genreList) {
+            var genreListContainer = document.getElementById("genre_list");
+            genreList.forEach(function (genre) {
+                var checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.name = "genre";
+                checkbox.value = genre.id;
+                checkbox.id = "genre_" + genre.id;
+
+                var label = document.createElement("label");
+                label.htmlFor = "genre_" + genre.id;
+                label.textContent = " " + genre.genreName;
+                label.classList.add("ms-2");
+
+                var div = document.createElement("div");
+                div.appendChild(checkbox);
+                div.appendChild(label);
+
+                genreListContainer.appendChild(div);
+            });
+        }
+
+        function loadActorList() {
+            const httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", "/api/actor/get-actor-list", true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    let actorList = JSON.parse(httpRequest.responseText);
+                    populateActorList(actorList);
+                    initializeActorSelect();
+                }
+            }
+            httpRequest.send();
+        }
+
+        function populateActorList(actorList) {
+            var actorSelectElement = document.getElementById("actor_list");
+            actorList.forEach(function (actor) {
+                var option = new Option(actor.actorName + " " + actor.actorSurname, actor.id);
+                actorSelectElement.appendChild(option);
+            });
+        }
+
+        function initializeActorSelect() {
+            $('#actor_list').select2({
+                placeholder: "Select actors",
+                allowClear: true,
+                width: '100%',
+                dropdownParent: $('#actor_list').parent()
+            });
+        }
+
+        function addMovie() {
+            var movieTitle = document.getElementById("movie_title").value;
+            var movieYear = document.getElementById("movie_year").value;
+            var movieCountryId = document.getElementById("movie_country").value;
+            var movieCountry = {id: parseInt(movieCountryId)};
+            var genreCheckboxes = document.getElementsByName("genre");
+            var movieDescription = document.getElementById("movie_description").value;
+
+
+            var movieDurationHoursInput = document.getElementById("movie_duration_hours");
+            var movieDurationMinutesInput = document.getElementById("movie_duration_minutes");
+
+            var movieDurationHours = parseInt(movieDurationHoursInput.value);
+            var movieDurationMinutes = parseInt(movieDurationMinutesInput.value);
+
+            // Проверка на null или NaN
+            if (movieDurationHours === null || isNaN(movieDurationHours || movieDurationHours < 0)) {
+                movieDurationHours = 0;
+            }
+
+            if (movieDurationMinutes === null || isNaN(movieDurationMinutes || movieDurationHours < 0)) {
+                movieDurationMinutes = 0;
+            }
+
+
+            var totalMinutes = movieDurationHours * 60;
+            totalMinutes += movieDurationMinutes;
+
+            var selectedGenres = Array.from(genreCheckboxes)
+                .filter(function (checkbox) {
+                    return checkbox.checked;
+                })
+                .map(function (checkbox) {
+                    return {id: parseInt(checkbox.value)};
+                });
+
+            if (selectedGenres.length === 0) {
+                alert("Please select at least one genre.");
+                return;
+            }
+
+            var movieDirectorId = document.getElementById("movie_director").value;
+            var movieDirector = {id: parseInt(movieDirectorId)};
+
+            var actorSelectElement = document.getElementById("actor_list");
+            var selectedActors = Array.from(actorSelectElement.selectedOptions)
+                .map(function (option) {
+                    return {id: parseInt(option.value)};
+                });
+
+
+            if (selectedActors.length === 0) {
+                alert("Please select at least one actor.");
+                return;
+            }
+
+            if (!movieTitle || !movieYear || !movieCountry) {
+                alert("Please fill in all required fields.");
+                return;
+            }
+
+            if (isNaN(movieYear) || isNaN(movieDurationHours) || isNaN(movieDurationMinutes)) {
+                alert("Invalid input for year or duration. Please enter numeric values.");
+                return;
+            }
+
+            if (movieYear < 1900 || movieYear > 2023) {
+                alert("Invalid year. Please enter a year between 1900 and 2023.");
+                return;
+            }
+
+            var totalDuration = movieDurationHours * 60 + movieDurationMinutes;
+            if (totalDuration < 40 || totalDuration > 300) {
+                alert("Movie duration cannot exceed 5 hours (300 minutes).");
+                return;
+            }
+
+
+            var movieData = {
+                movieTitle: movieTitle,
+                definition: movieDescription,
+                movieYear: movieYear,
+                movieCountry: movieCountry,
+                continuance: totalMinutes,
+                movieActors: selectedActors,
+                movieDirector: movieDirector,
+                movieGenres: selectedGenres
+            };
+            console.log(movieData);
+
+
+            var httpRequest = new XMLHttpRequest();
+            httpRequest.open("POST", "/api/movie/add-movie", true);
+            httpRequest.setRequestHeader("Content-Type", "application/json");
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE) {
+                    if (httpRequest.status === 200) {
+                        alert("Movie added successfully");
+                    } else {
+                        alert("Error adding movie");
+                    }
+                }
+            };
+            httpRequest.send(JSON.stringify(movieData));
+            resetForm();
+        }
+
+        function resetForm() {
+            document.getElementById("movie_title").value = "";
+            document.getElementById("movie_year").value = "";
+            document.getElementById("movie_country").value = "";
+            document.getElementById("movie_duration_hours").value = "";
+            document.getElementById("movie_duration_minutes").value = "";
+            document.getElementById("movie_description").value = "";
+            document.getElementById("movie_country").selectedIndex = 0;
+
+            // Сброс выбранных жанров
+            var genreCheckboxes = document.getElementsByName("genre");
+            Array.from(genreCheckboxes).forEach(function (checkbox) {
+                checkbox.checked = false;
+            });
+
+            // Сброс выбранных актеров
+            var actorSelectElement = document.getElementById("actor_list");
+            Array.from(actorSelectElement.options).forEach(function (option) {
+                option.selected = false;
+            });
+
+            var actorSelectElement = document.getElementById("actor_list");
+            $(actorSelectElement).val(null).trigger("change");
+
+        }
+
+    </script>
+</div>
+</html>

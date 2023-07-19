@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="main_layout.html">
+<div layout:fragment="siteContent">
+    <div class="row">
+        <div class="col-12">
+            <h2>Director List</h2>
+            <div class="mt-2">
+                <label for="searchInput" class="form-label">Search:</label>
+            </div>
+            <div class="mb-3 d-flex align-items-end">
+                <input type="text" class="form-control me-2" id="searchInput"
+                       placeholder="Enter director name or surname">
+                <button type="button" class="btn btn-outline-primary" onclick="searchDirectors()">Search</button>
+            </div>
+            <div class="mb-3" sec:authorize="hasAnyRole('ROLE_ADMIN','ROLE_MODERATOR')">
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addDirectorModal">
+                    Add Director
+                </button>
+            </div>
+
+            <!-- Add Director Modal -->
+            <div class="modal fade" id="addDirectorModal" tabindex="-1" aria-labelledby="addDirectorModalLabel"
+                 aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="addDirectorModalLabel">Add Director</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="firstNameInput" class="form-label">Name:</label>
+                                <input type="text" class="form-control" id="firstNameInput"
+                                       onkeydown="return /[a-z]/i.test(event.key)">
+                            </div>
+                            <div class="mb-3">
+                                <label for="lastNameInput" class="form-label">Surname:</label>
+                                <input type="text" class="form-control" id="lastNameInput"
+                                       onkeydown="return /[a-z]/i.test(event.key)">
+                            </div>
+                            <div class="mb-3">
+                                <label for="ageInput" class="form-label">Age:</label>
+                                <input type="number" class="form-control" id="ageInput">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-primary" onclick="addDirector()">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delete Director Modal -->
+            <div class="modal fade" id="deleteDirectorModal" tabindex="-1" aria-labelledby="deleteDirectorModalLabel"
+                 aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="deleteDirectorModalLabel">Delete Director</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure you want to delete this director?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-danger" id="confirmDeleteButton"
+                                    onclick="deleteDirector()">Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Update Director Modal -->
+            <div class="modal fade" id="updateDirectorModal" tabindex="-1" aria-labelledby="updateDirectorModalLabel"
+                 aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="updateDirectorModalLabel">Update Director</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="updateDirectorForm">
+                                <input type="hidden" id="updateDirectorId">
+                                <div class="mb-3">
+                                    <label for="updateFirstNameInput" class="form-label">Name:</label>
+                                    <input type="text" class="form-control" id="updateFirstNameInput"
+                                           onkeydown="return /[a-z]/i.test(event.key)" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="updateLastNameInput" class="form-label">SurName:</label>
+                                    <input type="text" class="form-control" id="updateLastNameInput"
+                                           onkeydown="return /[a-z]/i.test(event.key)" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="updateAgeInput" class="form-label">Age:</label>
+                                    <input type="number" class="form-control" id="updateAgeInput" min="16" max="100"
+                                           required>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" onclick="updateDirector()">Update</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <table class="table table-striped" id="directorTable">
+                <thead>
+                <tr>
+                    <th>
+                        <button type="button" class="btn btn-link" onclick="sortTable('firstName')">Name</button>
+                    </th>
+                    <th>
+                        <button type="button" class="btn btn-link" onclick="sortTable('lastName')">Surname</button>
+                    </th>
+                    <th>
+                        <button type="button" class="btn btn-link" onclick="sortTable('age')">Age</button>
+                    </th>
+                    <th sec:authorize="hasAnyRole('ROLE_ADMIN','ROLE_MODERATOR')" id="updateDirectorTh">
+                        Update Director
+                    </th>
+                    <th sec:authorize="hasAnyRole('ROLE_ADMIN','ROLE_MODERATOR')" id="deleteDirectorTh">
+                        Delete Director
+                    </th>
+                    <th>
+                        Info
+                    </th>
+                </tr>
+                </thead>
+                <tbody id="directorTableBody">
+                <!-- Directors will be populated here dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script type="text/javascript">
+        var directorList = []; // Глобальная переменная для хранения списка режиссеров
+        var filteredDirectorList = []; // Глобальная переменная для хранения отфильтрованного списка режиссеров
+
+        loadDirectorList();
+
+        document.addEventListener("DOMContentLoaded", function () {
+            loadDirectorList();
+        });
+
+        function loadDirectorList() {
+            const httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", "/api/producer/get-producer-list", true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    directorList = JSON.parse(httpRequest.responseText);
+                    filteredDirectorList = directorList; // Начальное значение фильтрованного списка равно полному списку режиссеров
+                    populateDirectorTable(filteredDirectorList);
+                }
+            };
+            httpRequest.send();
+        }
+
+        function populateDirectorTable(directorList) {
+            var tableBody = document.getElementById("directorTableBody");
+            tableBody.innerHTML = "";
+
+            directorList.forEach(function (director) {
+                var row = document.createElement("tr");
+
+                var nameCell = document.createElement("td");
+                nameCell.textContent = director.directorName;
+                var surnameCell = document.createElement("td");
+                surnameCell.textContent = director.directorSurname;
+                var ageCell = document.createElement("td");
+                ageCell.textContent = director.directorAge;
+
+                var moreCell = document.createElement("td");
+                var moreLink = document.createElement("a");
+                moreLink.classList.add("btn");
+                moreLink.classList.add("btn-primary");
+                moreLink.textContent = "More";
+                moreLink.href = "/producer_details/" + director.id;
+                moreCell.appendChild(moreLink);
+
+                row.appendChild(nameCell);
+                row.appendChild(surnameCell);
+                row.appendChild(ageCell);
+
+
+                var updateCell = document.getElementById("updateDirectorTh");
+                if (updateCell) {
+                    var updateLink = document.createElement("a");
+                    updateLink.classList.add("btn");
+                    updateLink.classList.add("btn-primary");
+                    updateLink.textContent = "Update";
+                    updateLink.setAttribute("data-bs-toggle", "modal");
+                    updateLink.setAttribute("data-bs-target", "#updateDirectorModal");
+                    updateLink.addEventListener("click", function () {
+                        openUpdateDirectorModal(director.id);
+                    });
+                    var updateButtonCell = document.createElement("td");
+                    updateButtonCell.appendChild(updateLink);
+                    row.appendChild(updateButtonCell);
+                }
+
+                var deleteCell = document.getElementById("deleteDirectorTh");
+                if (deleteCell) {
+                    var deleteLink = document.createElement("a");
+                    deleteLink.classList.add("btn");
+                    deleteLink.classList.add("btn-danger");
+                    deleteLink.textContent = "Delete";
+                    deleteLink.setAttribute("data-bs-toggle", "modal");
+                    deleteLink.setAttribute("data-bs-target", "#deleteDirectorModal");
+                    deleteLink.addEventListener("click", function () {
+                        openDeleteDirectorModal(director.id);
+                    });
+                    var deleteButtonCell = document.createElement("td");
+                    deleteButtonCell.appendChild(deleteLink);
+                    row.appendChild(deleteButtonCell);
+                }
+                row.appendChild(moreCell);
+                tableBody.appendChild(row);
+            });
+        }
+
+        function sortTable(column) {
+            switch (column) {
+                case 'firstName':
+                    filteredDirectorList.sort((a, b) => a.directorName.localeCompare(b.directorName));
+                    break;
+                case 'lastName':
+                    filteredDirectorList.sort((a, b) => a.directorSurname.localeCompare(b.directorSurname));
+                    break;
+                case 'age':
+                    filteredDirectorList.sort((a, b) => a.directorAge - b.directorAge);
+                    break;
+            }
+            populateDirectorTable(filteredDirectorList);
+        }
+
+        function searchDirectors() {
+            var searchInput = document.getElementById("searchInput").value.toLowerCase();
+            if (searchInput === "") {
+                loadDirectorList();
+            } else {
+                var httpRequest = new XMLHttpRequest();
+                httpRequest.open("GET", "/api/producer/get-producer-list?searchQuery=" + searchInput, true);
+                httpRequest.onreadystatechange = function () {
+                    if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                        var response = JSON.parse(httpRequest.responseText);
+                        filteredDirectorList = response;
+                        populateDirectorTable(filteredDirectorList);
+                    }
+                };
+                httpRequest.send();
+            }
+        }
+
+        function addDirector() {
+            var firstName = document.getElementById("firstNameInput").value;
+            var lastName = document.getElementById("lastNameInput").value;
+            var age = parseInt(document.getElementById("ageInput").value);
+
+            if (isNaN(age) || age < 16 || age > 100) {
+                alert("Age must be between 16 and 100.");
+                return;
+            }
+
+            var director = {
+                directorName: firstName,
+                directorSurname: lastName,
+                directorAge: age
+            };
+
+            var httpRequest = new XMLHttpRequest();
+            httpRequest.open("PUT", "/api/producer", true);
+            httpRequest.setRequestHeader("Content-Type", "application/json");
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    var response = JSON.parse(httpRequest.responseText);
+                    // Process the response if needed
+                    // ...
+                    // Close the modal
+                    var modal = document.getElementById("addDirectorModal");
+                    var modalInstance = bootstrap.Modal.getInstance(modal);
+                    modalInstance.hide();
+                    // Refresh the director list
+                    loadDirectorList();
+                }
+            };
+            httpRequest.send(JSON.stringify(director));
+        }
+
+        function openDeleteDirectorModal(directorId) {
+            var deleteButton = document.getElementById("confirmDeleteButton");
+            deleteButton.setAttribute("data-director-id", directorId);
+        }
+
+        function deleteDirector() {
+            var directorId = document.getElementById("confirmDeleteButton").getAttribute("data-director-id");
+
+            // Отправка запроса на удаление режиссера по идентификатору
+            var httpRequest = new XMLHttpRequest();
+            httpRequest.open("DELETE", "/api/producer/" + directorId, true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE) {
+                    if (httpRequest.status === 200) {
+                        loadDirectorList(); // Обновление списка режиссеров
+                        var modal = document.getElementById("deleteDirectorModal");
+                        var modalInstance = bootstrap.Modal.getInstance(modal);
+                        modalInstance.hide(); // Скрыть модальное окно
+                    } else {
+                        // Произошла ошибка при удалении режиссера
+                        alert("Error deleting director. Please try again.");
+                    }
+                }
+            };
+
+            httpRequest.send();
+        }
+
+        function openUpdateDirectorModal(directorId) {
+            var httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", "/api/producer/" + directorId, true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    var director = JSON.parse(httpRequest.responseText);
+                    if (director) {
+                        document.getElementById("updateDirectorId").value = director.id;
+                        document.getElementById("updateFirstNameInput").value = director.directorName;
+                        document.getElementById("updateLastNameInput").value = director.directorSurname;
+                        document.getElementById("updateAgeInput").value = director.directorAge;
+                    }
+                    modal = bootstrap.Modal(document.getElementById('updateDirectorModal'));
+                    modal.show();
+                }
+            };
+            httpRequest.send();
+        }
+
+        function updateDirector() {
+            var directorId = document.getElementById("updateDirectorId").value;
+            var firstName = document.getElementById("updateFirstNameInput").value;
+            var lastName = document.getElementById("updateLastNameInput").value;
+            var age = document.getElementById("updateAgeInput").value;
+
+            var director = {
+                id: directorId,
+                directorName: firstName,
+                directorSurname: lastName,
+                directorAge: age
+            };
+
+            var httpRequest = new XMLHttpRequest();
+            httpRequest.open("PUT", "/api/producer", true);
+            httpRequest.setRequestHeader("Content-Type", "application/json");
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    var modal = document.getElementById("updateDirectorModal");
+                    var modalInstance = bootstrap.Modal.getInstance(modal);
+                    modalInstance.hide();
+                    loadDirectorList();
+                }
+            };
+            httpRequest.send(JSON.stringify(director));
+        }
+    </script>
+</div>
+</html>

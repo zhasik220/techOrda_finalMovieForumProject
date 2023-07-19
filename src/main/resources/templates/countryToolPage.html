@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="main_layout.html">
+<div layout:fragment="siteContent">
+    <div class="row">
+        <div class="col-12">
+            <h2>Country List</h2>
+            <div class="mt-2">
+                <label for="searchInput" class="form-label">Search:</label>
+            </div>
+            <div class="mb-3 d-flex align-items-end">
+                <input type="text" class="form-control me-2" id="searchInput" placeholder="Enter country name">
+                <button type="button" class="btn btn-outline-primary" onclick="searchCountries()">Search</button>
+            </div>
+            <div class="mb-3" sec:authorize="hasAnyRole('ROLE_ADMIN','ROLE_MODERATOR')">
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCountryModal">
+                    Add Country
+                </button>
+            </div>
+
+            <!-- Add Country Modal -->
+            <div class="modal fade" id="addCountryModal" tabindex="-1" aria-labelledby="addCountryModalLabel"
+                 aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="addCountryModalLabel">Add Country</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="countryNameInput" class="form-label">Country Name:</label>
+                                <input type="text" class="form-control" id="countryNameInput"
+                                       onkeydown="return /[a-z]/i.test(event.key)">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-primary" onclick="addCountry()">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delete Country Modal -->
+            <div class="modal fade" id="deleteCountryModal" tabindex="-1" aria-labelledby="deleteCountryModalLabel"
+                 aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="deleteCountryModalLabel">Delete Country</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure you want to delete this country?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-danger" id="confirmDeleteButton"
+                                    onclick="deleteCountry()">Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Update Country Modal -->
+            <div class="modal fade" id="updateCountryModal" tabindex="-1" aria-labelledby="updateCountryModalLabel"
+                 aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="updateCountryModalLabel">Update Country</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="updateCountryForm">
+                                <input type="hidden" id="updateCountryId">
+                                <div class="mb-3">
+                                    <label for="updateCountryNameInput" class="form-label">Country Name:</label>
+                                    <input type="text" class="form-control" id="updateCountryNameInput"
+                                           onkeydown="return /[a-z]/i.test(event.key)" required>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" onclick="updateCountry()">Update</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <table class="table table-striped" id="countryTable">
+                <thead>
+                <tr>
+                    <th>
+                        Country Name
+                    </th>
+                    <th sec:authorize="hasAnyRole('ROLE_ADMIN','ROLE_MODERATOR')" id="updateCountryTh">
+                        Update Country
+                    </th>
+                    <th sec:authorize="hasAnyRole('ROLE_ADMIN','ROLE_MODERATOR')" id="deleteCountryTh">
+                        Delete Country
+                    </th>
+                </tr>
+                </thead>
+                <tbody id="countryTableBody">
+                <!-- Countries will be populated here dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script type="text/javascript">
+        var countryList = []; // Глобальная переменная для хранения списка стран
+        var filteredCountryList = []; // Глобальная переменная для хранения отфильтрованного списка стран
+
+        loadCountryList();
+
+        document.addEventListener("DOMContentLoaded", function () {
+            loadCountryList();
+        });
+
+        function loadCountryList() {
+            const httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", "http://localhost:8080/api/country/get-country-list", true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    countryList = JSON.parse(httpRequest.responseText);
+                    filteredCountryList = countryList; // Начальное значение фильтрованного списка равно полному списку стран
+                    populateCountryTable(filteredCountryList);
+                }
+            };
+            httpRequest.send();
+        }
+
+        function populateCountryTable(countryList) {
+            var tableBody = document.getElementById("countryTableBody");
+            tableBody.innerHTML = "";
+
+            countryList.forEach(function (country) {
+                var row = document.createElement("tr");
+
+                var nameCell = document.createElement("td");
+                nameCell.textContent = country.countryName;
+
+                row.appendChild(nameCell);
+
+                var updateCell = document.getElementById("updateCountryTh");
+                if (updateCell) {
+                    var updateLink = document.createElement("a");
+                    updateLink.classList.add("btn");
+                    updateLink.classList.add("btn-primary");
+                    updateLink.textContent = "Update";
+                    updateLink.setAttribute("data-bs-toggle", "modal");
+                    updateLink.setAttribute("data-bs-target", "#updateCountryModal");
+                    updateLink.addEventListener("click", function () {
+                        openUpdateCountryModal(country.id);
+                    });
+                    var updateButtonCell = document.createElement("td");
+                    updateButtonCell.appendChild(updateLink);
+                    row.appendChild(updateButtonCell);
+                }
+
+                var deleteCell = document.getElementById("deleteCountryTh");
+                if (deleteCell) {
+                    var deleteLink = document.createElement("a");
+                    deleteLink.classList.add("btn");
+                    deleteLink.classList.add("btn-danger");
+                    deleteLink.textContent = "Delete";
+                    deleteLink.setAttribute("data-bs-toggle", "modal");
+                    deleteLink.setAttribute("data-bs-target", "#deleteCountryModal");
+                    deleteLink.addEventListener("click", function () {
+                        openDeleteCountryModal(country.id);
+                    });
+                    var deleteButtonCell = document.createElement("td");
+                    deleteButtonCell.appendChild(deleteLink);
+                    row.appendChild(deleteButtonCell);
+                }
+
+                tableBody.appendChild(row);
+            });
+        }
+
+
+        function searchCountries() {
+            var searchInput = document.getElementById("searchInput").value.toLowerCase();
+            if (searchInput === "") {
+                loadCountryList();
+            } else {
+                var httpRequest = new XMLHttpRequest();
+                httpRequest.open("GET", "http://localhost:8080/api/country/get-country-list?searchQuery=" + searchInput, true);
+                httpRequest.onreadystatechange = function () {
+                    if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                        var response = JSON.parse(httpRequest.responseText);
+                        filteredCountryList = response;
+                        populateCountryTable(filteredCountryList);
+                    }
+                };
+                httpRequest.send();
+            }
+        }
+
+        function addCountry() {
+            var countryName = document.getElementById("countryNameInput").value;
+
+            var country = {
+                countryName: countryName
+            };
+
+            var httpRequest = new XMLHttpRequest();
+            httpRequest.open("PUT", "http://localhost:8080/api/country", true);
+            httpRequest.setRequestHeader("Content-Type", "application/json");
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    var response = JSON.parse(httpRequest.responseText);
+                    // Process the response if needed
+                    // ...
+                    // Close the modal
+                    var modal = document.getElementById("addCountryModal");
+                    var modalInstance = bootstrap.Modal.getInstance(modal);
+                    modalInstance.hide();
+                    // Refresh the country list
+                    loadCountryList();
+                }
+            };
+            httpRequest.send(JSON.stringify(country));
+        }
+
+        function openDeleteCountryModal(countryId) {
+            var deleteButton = document.getElementById("confirmDeleteButton");
+            deleteButton.setAttribute("data-country-id", countryId);
+        }
+
+        function deleteCountry() {
+            var countryId = document.getElementById("confirmDeleteButton").getAttribute("data-country-id");
+
+            // Отправка запроса на удаление страны по идентификатору
+            var httpRequest = new XMLHttpRequest();
+            httpRequest.open("DELETE", "http://localhost:8080/api/country/" + countryId, true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE) {
+                    if (httpRequest.status === 200) {
+                        loadCountryList(); // Обновление списка стран
+                        var modal = document.getElementById("deleteCountryModal");
+                        var modalInstance = bootstrap.Modal.getInstance(modal);
+                        modalInstance.hide(); // Скрыть модальное окно
+                    } else {
+                        // Произошла ошибка при удалении страны
+                        alert("Error deleting country. Please try again.");
+                    }
+                }
+            };
+
+            httpRequest.send();
+        }
+
+        function openUpdateCountryModal(countryId) {
+            var httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", "http://localhost:8080/api/country/" + countryId, true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    var country = JSON.parse(httpRequest.responseText);
+                    if (country) {
+                        document.getElementById("updateCountryId").value = country.id;
+                        document.getElementById("updateCountryNameInput").value = country.countryName;
+                    }
+                    modal = bootstrap.Modal(document.getElementById('updateCountryModal'));
+                    modal.show();
+                }
+            };
+            httpRequest.send();
+        }
+
+        function updateCountry() {
+            var countryId = document.getElementById("updateCountryId").value;
+            var countryName = document.getElementById("updateCountryNameInput").value;
+
+            var country = {
+                id: countryId,
+                countryName: countryName
+            };
+
+            var httpRequest = new XMLHttpRequest();
+            httpRequest.open("PUT", "http://localhost:8080/api/country", true);
+            httpRequest.setRequestHeader("Content-Type", "application/json");
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    var modal = document.getElementById("updateCountryModal");
+                    var modalInstance = bootstrap.Modal.getInstance(modal);
+                    modalInstance.hide();
+                    loadCountryList();
+                }
+            };
+            httpRequest.send(JSON.stringify(country));
+        }
+    </script>
+</div>
+</html>

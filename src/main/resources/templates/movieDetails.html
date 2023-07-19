@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="main_layout.html">
+
+<div layout:fragment="siteContent">
+    <div class="row">
+        <input type="hidden" id="currentUserId" sec:authorize="isAuthenticated()"
+               th:value="${#authentication.principal.id}">
+        <div class="col-3">
+            <img src="/img/movie_background.jpg" alt="Movie Poster" class="img-fluid movie-poster">
+        </div>
+        <div class="col-9">
+            <h1 class="movie-title" id="movie_name"></h1>
+            <table class="table table-striped">
+                <tr>
+                    <th>Year:</th>
+                    <td id="movie_year"></td>
+                </tr>
+                <tr>
+                    <th>Country:</th>
+                    <td id="movie_country"></td>
+                </tr>
+                <tr>
+                    <th>Director:</th>
+                    <td id="movie_director"></td>
+                </tr>
+                <tr>
+                    <th>Genre:</th>
+                    <td id="movie_genre"></td>
+                </tr>
+                <tr>
+                    <th>Duration:</th>
+                    <td id="movie_duration"></td>
+                </tr>
+                <tr>
+                    <th>Starring roles:</th>
+                    <td id="movie_actors"></td>
+                </tr>
+            </table>
+            <div class="mt-3">
+                <button type="button" sec:authorize="hasAnyRole('ROLE_ADMIN','ROLE_MODERATOR')" class="btn btn-primary"
+                        data-bs-toggle="modal" data-bs-target="#updateModal">Update
+                </button>
+                <button type="button" sec:authorize="hasAnyRole('ROLE_ADMIN')" class="btn btn-danger"
+                        data-bs-toggle="modal" data-bs-target="#deleteModal">Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <h2>About Movie</h2>
+            <p id="movie_description" class="movie-description"></p>
+        </div>
+    </div>
+    <!--Comments--->
+    <div class="row">
+        <div class="col-12">
+            <h2>Comments</h2>
+            <div id="comments_section">
+                <!-- Comments will be dynamically added here -->
+            </div>
+            <div id="no_comments_message" class="text-muted">
+
+            </div>
+            <hr>
+            <h3>Add Comment</h3>
+            <h5 sec:authorize="!isAuthenticated()">To add Comment you need to Sign in</h5>
+            <textarea id="comment_text" class="form-control mb-2" sec:authorize="isAuthenticated()"></textarea>
+            <button id="add_comment_btn" class="btn btn-primary mb-5" sec:authorize="isAuthenticated()">Add Comment
+            </button>
+        </div>
+    </div>
+
+    <!-- Update Modal -->
+    <div class="modal modal-xl fade" id="updateModal" tabindex="-1" aria-labelledby="updateModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="updateModalLabel">Update Movie</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="update_movie_title" class="form-label">Title:</label>
+                        <input type="text" class="form-control" id="update_movie_title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="update_movie_year" class="form-label">Year:</label>
+                        <input type="number" class="form-control" id="update_movie_year" min="1900" max="2023" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="update_movie_country" class="form-label">Country:</label>
+                        <select class="form-select" id="update_movie_country" required>
+                        </select>
+                    </div>
+                    <div class="mb-3 w-25">
+                        <label class="form-label">Duration:</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="update_movie_duration_hours"
+                                   placeholder="Hours" min="0">
+                            <span class="input-group-text">h</span>
+                            <input type="number" class="form-control" id="update_movie_duration_minutes"
+                                   placeholder="Minutes" min="0" max="59">
+                            <span class="input-group-text">min</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="update_genre_list" class="form-label">Genres:</label>
+                        <div id="update_genre_list">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="update_actor_list" class="form-label">Actors:</label>
+                        <select class="form-control" id="update_actor_list" multiple>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="update_movie_director" class="form-label">Director:</label>
+                        <select class="form-control" id="update_movie_director" required>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="update_movie_description" class="form-label">Description:</label>
+                        <textarea class="form-control" id="update_movie_description" rows="5" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-success" id="saveChangesBtn">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel">Delete Movie</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this movie?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="deleteBtn">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Edit Comment Modal -->
+    <div class="modal fade" id="editCommentModal" tabindex="-1" aria-labelledby="editCommentModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editCommentModalLabel">Edit Comment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea id="edit_comment_text" class="form-control" rows="5"></textarea>
+                    <input type="hidden" id="edit_comment_id">
+                    <input type="hidden" id="edit_comment_posted_time">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveEditChangesBtn">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Delete Comment Modal -->
+    <div class="modal fade" id="deleteCommentModal" tabindex="-1" aria-labelledby="deleteCommentModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteCommentModalLabel">Delete Comment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="delete_comment_id">
+                    <p>Are you sure you want to delete this comment?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="deleteCommentBtn">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="text/javascript">
+        var url = new URL(window.location.href);
+        var movieId = url.pathname.split("/").pop();
+        loadMovieDetails();
+        loadComments();
+
+        function loadMovieDetails() {
+            const httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", "http://localhost:8080/api/movie/" + movieId, true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    movieData = JSON.parse(httpRequest.responseText);
+                    document.getElementById("movie_name").innerText = movieData.movieTitle
+                    document.getElementById("movie_year").innerText = movieData.movieYear;
+                    document.getElementById("movie_country").innerText = movieData.movieCountry.countryName;
+                    document.getElementById("movie_director").innerText = movieData.movieDirector.directorName +
+                        " " + movieData.movieDirector.directorSurname;
+                    document.getElementById("movie_genre").innerText = movieData.movieGenres.map(
+                        function (genre) {
+                            return genre.genreName;
+                        }).join(", ");
+                    document.getElementById("movie_duration").innerText = movieData.continuance + " minutes";
+                    document.getElementById("movie_actors").innerText = movieData.movieActors.map(
+                        function (actor) {
+                            return actor.actorName + " " + actor.actorSurname;
+                        }).join(", ");
+                    // Update Modal Fill Information
+                    document.getElementById("movie_description").innerText = movieData.definition;
+                    document.getElementById("update_movie_title").value = movieData.movieTitle;
+                    document.getElementById("update_movie_year").value = movieData.movieYear;
+                    document.getElementById("update_movie_country").value = movieData.movieCountry;
+                    var duration = movieData.continuance;
+                    var hours = Math.floor(duration / 60);
+                    var minutes = duration % 60;
+                    document.getElementById("update_movie_duration_hours").value = hours;
+                    document.getElementById("update_movie_duration_minutes").value = minutes;
+                    document.getElementById("update_movie_description").value = movieData.definition;
+
+                    loadGenreList();
+                    loadActorList();
+                    loadDirectorList();
+                    loadCountryList();
+
+                    // Жанры
+                    var selectedGenres = movieData.movieGenres.map(function (genre) {
+                        return genre.id.toString();
+                    });
+                    $('#updateModal').on('show.bs.modal', function () {
+                        $('#update_genre_list input[type="checkbox"]').each(function () {
+                            var checkboxValue = $(this).val();
+                            if (selectedGenres.includes(checkboxValue)) {
+                                $(this).prop('checked', true);
+                            } else {
+                                $(this).prop('checked', false);
+                            }
+                        });
+                    });
+
+                    // Актеры
+                    var selectedActors = movieData.movieActors.map(function (actor) {
+                        return actor.id.toString();
+                    });
+                    $('#updateModal').on('show.bs.modal', function () {
+                        $('#update_actor_list').val(selectedActors).trigger('change');
+                    });
+                }
+            };
+            httpRequest.send();
+        }
+
+
+        function loadCountryList() {
+            const httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", "/api/country/get-country-list", true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    let countryList = JSON.parse(httpRequest.responseText);
+                    populateCountryList(countryList);
+                }
+            };
+            httpRequest.send();
+        }
+
+        function populateCountryList(countryList) {
+            var countrySelectElement = document.getElementById("update_movie_country");
+            countrySelectElement.innerHTML = "";
+            countryList.forEach(function (country) {
+                var option = new Option(country.countryName, country.id);
+                if (movieData.movieCountry.id === country.id) {
+                    option.selected = true; // Select the option if the country id matches
+                }
+                countrySelectElement.appendChild(option);
+            });
+        }
+
+
+        function loadDirectorList() {
+            const httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", "/api/producer/get-producer-list", true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    let directorList = JSON.parse(httpRequest.responseText);
+                    populateDirectorList(directorList);
+                }
+            };
+            httpRequest.send();
+        }
+
+        function populateDirectorList(directorList) {
+            var directorSelectElement = document.getElementById("update_movie_director");
+            directorSelectElement.innerHTML = "";
+            directorList.forEach(function (director) {
+                var option = new Option(director.directorName + " " + director.directorSurname, director.id);
+                if (movieData.movieDirector.id === director.id) {
+                    option.selected = true; // Выбрать опцию, если идентификатор режиссера совпадает
+                }
+                directorSelectElement.appendChild(option);
+            });
+        }
+
+        function loadGenreList() {
+            const httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", "/api/genre/get-genre-list", true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    let genreList = JSON.parse(httpRequest.responseText);
+                    populateGenreList(genreList);
+                }
+            };
+            httpRequest.send();
+        }
+
+        function populateGenreList(genreList) {
+            var genreListContainer = document.getElementById("update_genre_list");
+            genreListContainer.innerHTML = "";
+            genreList.forEach(function (genre) {
+                var checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.name = "genre";
+                checkbox.value = genre.id;
+                checkbox.id = "genre_" + genre.id;
+
+                var label = document.createElement("label");
+                label.htmlFor = "genre_" + genre.id;
+                label.textContent = " " + genre.genreName;
+                label.classList.add("ms-2");
+
+                var div = document.createElement("div");
+                div.appendChild(checkbox);
+                div.appendChild(label);
+
+                genreListContainer.appendChild(div);
+            });
+        }
+
+        function loadActorList() {
+            const httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", "/api/actor/get-actor-list", true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    let actorList = JSON.parse(httpRequest.responseText);
+                    populateActorList(actorList);
+                    initializeActorSelect();
+                }
+            };
+            httpRequest.send();
+        }
+
+        function populateActorList(actorList) {
+            var actorSelectElement = document.getElementById("update_actor_list");
+            actorSelectElement.innerHTML = "";
+            actorList.forEach(function (actor) {
+                var option = new Option(actor.actorName + " " + actor.actorSurname, actor.id);
+                actorSelectElement.appendChild(option);
+            });
+        }
+
+        function initializeActorSelect() {
+            $('#update_actor_list').select2({
+                placeholder: "Select actors",
+                allowClear: true,
+                width: '100%',
+                dropdownParent: $('#update_actor_list').parent()
+            });
+        }
+
+        function getSelectedGenres() {
+            var selectedGenres = [];
+            var genreCheckboxes = document.querySelectorAll("#update_genre_list input[type='checkbox']:checked");
+            genreCheckboxes.forEach(function (checkbox) {
+                selectedGenres.push({id: parseInt(checkbox.value)});
+            });
+            return selectedGenres;
+        }
+
+        document.querySelector("#updateModal .btn-success").addEventListener("click", function () {
+            var movieTitle = document.getElementById("update_movie_title").value;
+            var movieYear = document.getElementById("update_movie_year").value;
+            var movieCountryId = document.getElementById("update_movie_country").value;
+            var movieCountry = {id: parseInt(movieCountryId)};
+            var movieDurationHours = document.getElementById("update_movie_duration_hours").value;
+            var movieDurationMinutes = document.getElementById("update_movie_duration_minutes").value;
+
+            var totalDuration = parseInt(movieDurationHours) * 60 + parseInt(movieDurationMinutes);
+
+            var movieDirectorId = document.getElementById("update_movie_director").value;
+            var movieDirector = {id: parseInt(movieDirectorId)};
+
+            var actorSelectElement = document.getElementById("update_actor_list");
+            var selectedActors = Array.from(actorSelectElement.selectedOptions).map(function (option) {
+                return {id: parseInt(option.value)};
+            });
+
+            if (selectedActors.length === 0) {
+                alert("Please select at least one actor.");
+                return;
+            }
+
+            if (!movieTitle || !movieYear || !movieCountry || !movieDurationHours || !movieDurationMinutes) {
+                alert("Please fill in all required fields.");
+                return;
+            }
+
+            if (isNaN(movieYear) || isNaN(movieDurationHours) || isNaN(movieDurationMinutes)) {
+                alert("Invalid input for year or duration. Please enter numeric values.");
+                return;
+            }
+
+            if (movieYear < 1900 || movieYear > 2023) {
+                alert("Invalid year. Please enter a year between 1900 and 2023.");
+                return;
+            }
+
+            if (totalDuration > 300) {
+                alert("Movie duration cannot exceed 5 hours (300 minutes).");
+                return;
+            }
+
+            var selectedGenres = getSelectedGenres();
+
+
+            var updatedMovie = {
+                id: movieId,
+                movieTitle: movieTitle,
+                movieYear: movieYear,
+                movieCountry: movieCountry,
+                continuance: totalDuration,
+                movieDirector: movieDirector,
+                movieGenres: selectedGenres,
+                movieActors: selectedActors,
+                definition: document.getElementById("update_movie_description").value
+            };
+
+
+            var httpRequest = new XMLHttpRequest();
+            httpRequest.open("PUT", "http://localhost:8080/api/movie", true);
+            httpRequest.setRequestHeader("Content-Type", "application/json");
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState == XMLHttpRequest.DONE && httpRequest.status == 200) {
+                    console.log("Updated movie successfully");
+                    $('#updateModal').modal('hide');
+                    loadMovieDetails();
+                }
+            };
+            console.log(updatedMovie);
+            httpRequest.send(JSON.stringify(updatedMovie));
+        });
+
+        // Обработчик события для кнопки "Delete"
+        document.querySelector("#deleteModal .btn-danger").addEventListener("click", function () {
+            var httpRequest = new XMLHttpRequest();
+            httpRequest.open("DELETE", "http://localhost:8080/api/movie/" + movieId, true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE) {
+                    if (httpRequest.status === 200) {
+                        console.log("Deleted movie successfully");
+                    } else {
+                        console.log("Failed to delete movie");
+                    }
+                }
+            };
+            httpRequest.send();
+            window.location.href = "/";
+        });
+
+        function loadComments() {
+            const httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", "http://localhost:8080/api/comment/get-comment-list?movie_id=" + movieId, true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    var comments = JSON.parse(httpRequest.responseText);
+                    renderComments(comments);
+                    if (comments.length > 0) {
+                        renderComments(comments);
+                        var no_comment = document.getElementById("no_comments_message");
+                        no_comment.innerText = "";
+                    } else {
+                        // Обработка случая, когда массив комментариев пустой
+                        var no_comment = document.getElementById("no_comments_message");
+                        no_comment.innerText = "No comments yet.";
+                    }
+                }
+            };
+            httpRequest.send();
+        }
+
+        function formatDateTime(isoDateTime) {
+            var dateTime = new Date(isoDateTime);
+            var year = dateTime.getFullYear();
+            var month = (dateTime.getMonth() + 1).toString().padStart(2, "0");
+            var day = dateTime.getDate().toString().padStart(2, "0");
+            var hours = dateTime.getHours().toString().padStart(2, "0");
+            var minutes = dateTime.getMinutes().toString().padStart(2, "0");
+            var seconds = dateTime.getSeconds().toString().padStart(2, "0");
+            return "Day: " + day + "." + month + "." + year + " Time: " + hours + ":" + minutes + ":" + seconds;
+        }
+
+        function renderComments(comments) {
+            var commentsSection = document.getElementById("comments_section");
+            commentsSection.innerHTML = "";
+
+            if (comments.length > 0) {
+                comments.forEach(function (comment) {
+                    var commentCard = document.createElement("div");
+                    commentCard.classList.add("card", "mb-3");
+
+                    var cardHeader = document.createElement("div");
+                    cardHeader.classList.add("card-header", "bg-transparent");
+                    cardHeader.innerText = "User: " + comment.userFullName;
+
+                    var cardBody = document.createElement("div");
+                    cardBody.classList.add("card-body");
+
+                    var commentText = document.createElement("p");
+                    commentText.classList.add("card-text");
+                    commentText.innerText = comment.commentText;
+
+                    var cardFooter = document.createElement("div");
+                    cardFooter.classList.add("card-footer", "bg-transparent");
+                    cardFooter.innerText = "Posted Date: " + formatDateTime(comment.postedTime);
+
+                    // Проверяем, если комментарий отредактирован
+                    if (comment.edited) {
+                        var editedBadge = document.createElement("div");
+                        editedBadge.classList.add("rounded-pill", "float-end", "bg-secondary", "text-light", "px-3");
+                        editedBadge.innerText = "Edited";
+                        cardHeader.appendChild(editedBadge);
+                    }
+
+                    // Кнопка "Edit"
+                    var editButton = document.createElement("button");
+                    editButton.classList.add("btn", "btn-primary", "me-2");
+                    editButton.setAttribute("data-bs-toggle", "modal");
+                    editButton.setAttribute("data-bs-target", "#editCommentModal");
+                    editButton.innerText = "Edit";
+                    editButton.addEventListener("click", function () {
+                        // Получаем текст и идентификатор комментария
+                        var commentText = comment.commentText;
+                        var commentId = comment.id;
+                        var commentPostedTime = comment.postedTime;
+                        // Устанавливаем текст и идентификатор комментария в модальном окне "Edit Comment"
+                        document.getElementById("edit_comment_text").value = commentText;
+                        document.getElementById("edit_comment_id").value = commentId;
+                        document.getElementById("edit_comment_posted_time").value = commentPostedTime;
+                    });
+
+                    // Кнопка "Delete"
+                    var deleteButton = document.createElement("button");
+                    deleteButton.classList.add("btn", "btn-danger");
+                    deleteButton.setAttribute("data-bs-toggle", "modal");
+                    deleteButton.setAttribute("data-bs-target", "#deleteCommentModal");
+                    deleteButton.innerText = "Delete";
+                    deleteButton.addEventListener("click", function () {
+                        var commentIdDelete = comment.id;
+                        document.getElementById("delete_comment_id").value = commentIdDelete;
+                    });
+
+                    // Добавляем кнопки "Edit" и "Delete" только если пользователь авторизован
+                    var currentUserInput = document.getElementById("currentUserId");
+                    if (currentUserInput) {
+                        var currentUserId = currentUserInput.value;
+
+
+                        var httpRequest = new XMLHttpRequest();
+                        httpRequest.open("GET", "http://localhost:8080/api/permission/get-permission-current-user", true);
+                        httpRequest.onreadystatechange = function () {
+                            if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                                var userRoles = JSON.parse(httpRequest.responseText);
+                                var allowedRoles = ["ROLE_ADMIN", "ROLE_MODERATOR"]; // Список разрешенных ролей
+                                var hasAllowedRole = userRoles.some(role => allowedRoles.includes(role.permissionRole));
+                                if (comment.userId === parseInt(currentUserId)) {
+                                    console.log("DDDDDD")
+                                    var commentDiv = document.createElement("div");
+                                    commentDiv.classList.add("float-end");
+                                    commentDiv.appendChild(editButton);
+                                    commentDiv.appendChild(deleteButton);
+                                    cardFooter.appendChild(commentDiv);
+                                } else if (hasAllowedRole) {
+                                    console.log("WDWDWDWD")
+                                    var commentDiv = document.createElement("div");
+                                    commentDiv.classList.add("float-end");
+                                    commentDiv.appendChild(deleteButton);
+                                    cardFooter.appendChild(commentDiv);
+                                }
+                            }
+                        };
+                        httpRequest.send();
+                    }
+
+
+                    cardBody.appendChild(commentText);
+                    commentCard.appendChild(cardHeader);
+                    commentCard.appendChild(cardBody);
+                    commentCard.appendChild(cardFooter);
+
+                    commentsSection.appendChild(commentCard);
+                });
+            } else {
+                var noCommentsMessage = document.getElementById("no_comments_message");
+                noCommentsMessage.style.display = "block";
+            }
+        }
+
+        // Обработчик события для кнопки "Add Comment"
+        document.getElementById("add_comment_btn").addEventListener("click", function () {
+            var commentText = document.getElementById("comment_text").value;
+
+            if (commentText.trim() === "") {
+                alert("Пожалуйста, введите комментарий.");
+                return;
+            }
+            var user_id = null;
+            currentUserInput = document.getElementById("currentUserId");
+            if (currentUserInput) {
+                user_id = currentUserInput.value;
+            }
+            var commentData = {
+                commentText: commentText,
+                userId: user_id,
+                movieId: movieId,
+                edited: false
+            };
+
+            var httpRequest = new XMLHttpRequest();
+            httpRequest.open("POST", "http://localhost:8080/api/comment/add-comment", true);
+            httpRequest.setRequestHeader("Content-Type", "application/json");
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    var comment = JSON.parse(httpRequest.responseText);
+                    document.getElementById("comment_text").value = ""; // Очищаем поле ввода комментария
+                    loadComments(); // Перезагружаем комментарии для отображения нового комментария
+                }
+            };
+            httpRequest.send(JSON.stringify(commentData));
+        });
+
+        // Обновление комментария
+        document.querySelector("#editCommentModal #saveEditChangesBtn").addEventListener("click", function () {
+            var commentId = document.getElementById("edit_comment_id").value;
+            var updatedCommentText = document.getElementById("edit_comment_text").value;
+            var commentTime = document.getElementById("edit_comment_posted_time").value;
+            var user_id = null;
+            currentUserInput = document.getElementById("currentUserId");
+            if (currentUserInput) {
+                user_id = currentUserInput.value;
+            }
+            if (updatedCommentText.trim() === "") {
+                alert("Пожалуйста, введите комментарий.");
+                return;
+            }
+
+            var updatedComment = {
+                id: commentId,
+                commentText: updatedCommentText,
+                movieId: movieId,
+                userId: user_id,
+                postedTime: commentTime,
+                edited: true
+            };
+
+            var httpRequest = new XMLHttpRequest();
+            httpRequest.open("PUT", "http://localhost:8080/api/comment", true);
+            httpRequest.setRequestHeader("Content-Type", "application/json");
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    console.log("Комментарий успешно обновлен");
+                    $('#editCommentModal').modal('hide');
+                    loadComments();
+                }
+            };
+            httpRequest.send(JSON.stringify(updatedComment));
+        });
+
+        // Удаление комментария
+        document.querySelector("#deleteCommentModal #deleteCommentBtn").addEventListener("click", function () {
+            var commentId = document.getElementById("delete_comment_id").value;
+            var httpRequest = new XMLHttpRequest();
+            console.log("Текущий идентификатор комментария: " + commentId);
+            httpRequest.open("DELETE", "http://localhost:8080/api/comment/" + commentId, true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE) {
+                    if (httpRequest.status === 200) {
+                        console.log("Комментарий успешно удален");
+                        $('#deleteCommentModal').modal('hide');
+                        loadComments();
+                    } else {
+                        console.log("Не удалось удалить комментарий");
+                    }
+                }
+            };
+            httpRequest.send();
+        });
+
+
+    </script>
+</div>
+</html>

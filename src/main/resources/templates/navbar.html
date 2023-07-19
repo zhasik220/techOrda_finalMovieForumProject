@@ -1,0 +1,66 @@
+<nav class="navbar navbar-expand-lg bg-body-tertiary" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <div class="container-fluid">
+        <a class="navbar-brand" th:href="@{'/'}">KinoBit</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" th:href="@{'/'}">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{'/actors'}">
+                        Actors
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{'/producers'}">
+                        Producers
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{'/sign-in-page'}" sec:authorize="isAnonymous()">
+                        Sign In
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{'/sign-up-page'}" sec:authorize="isAnonymous()">
+                        Sign Up
+                    </a>
+                </li>
+                <li class="nav-item dropdown" sec:authorize="hasAnyRole('ROLE_ADMIN','ROLE_MODERATOR')">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+                       aria-expanded="false">
+                        Tools
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li sec:authorize="hasAnyRole('ROLE_ADMIN')"><a class="dropdown-item" th:href="@{'/user_tool'}">User Tool</a></li>
+                        <li><a class="dropdown-item" th:href="@{'/country_tool'}">Country Tool</a></li>
+                        <li><a class="dropdown-item" th:href="@{'/genre_tool'}">Genre Tool</a></li>
+                        <li sec:authorize="hasAnyRole('ROLE_ADMIN')"><a class="dropdown-item" th:href="@{'/add_movie'}">Add Movie</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+                       aria-expanded="false">
+                        <span th:text="${#authentication.principal.fullName}"></span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" th:href="@{'/profile'}">Profile</a></li>
+                        <li><a class="dropdown-item" th:href="@{'/update-password'}">Update Password</a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li>
+                            <form th:action="@{'/sign-out'}" method="post">
+                                <button class="dropdown-item" href="#">Log out</button>
+                            </form>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>

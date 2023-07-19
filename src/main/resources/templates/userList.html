@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="main_layout.html">
+<div layout:fragment="siteContent">
+    <h2 class="text-center">User List</h2>
+    <table id="userTable" class="table table-striped">
+        <thead>
+        <tr>
+            <th>Email</th>
+            <th>Full Name</th>
+            <th>Roles</th>
+            <th>Blocked</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody id="userTableBody"></tbody>
+    </table>
+
+    <script>
+        loadUserList();
+
+        document.addEventListener("DOMContentLoaded", function () {
+            loadUserList();
+        });
+
+        function loadUserList() {
+            const httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", "http://localhost:8080/api/user/get-user-list", true);
+            httpRequest.onreadystatechange = function () {
+                if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
+                    const userList = JSON.parse(httpRequest.responseText);
+                    populateUserTable(userList);
+                }
+            };
+            httpRequest.send();
+        }
+
+        function populateUserTable(userList) {
+            const tableBody = document.getElementById("userTableBody");
+            tableBody.innerHTML = ""; // Очистка содержимого таблицы
+
+            userList.forEach(function (user) {
+                const row = document.createElement("tr");
+
+                const emailCell = document.createElement("td");
+                emailCell.textContent = user.email;
+                row.appendChild(emailCell);
+
+                const fullNameCell = document.createElement("td");
+                fullNameCell.textContent = user.fullName;
+                row.appendChild(fullNameCell);
+
+                const rolesCell = document.createElement("td");
+                const rolesList = document.createElement("ul");
+                rolesList.classList.add("list-unstyled");
+                user.userPermissionList.forEach(function (permission) {
+                    const roleItem = document.createElement("li");
+                    roleItem.textContent = permission.permission_role;
+                    rolesList.appendChild(roleItem);
+                });
+                rolesCell.appendChild(rolesList);
+                row.appendChild(rolesCell);
+
+                const blockedCell = document.createElement("td");
+                blockedCell.textContent = user.isBlocked;
+                row.appendChild(blockedCell);
+
+                const actionsCell = document.createElement("td");
+                const detailsLink = document.createElement("a");
+                detailsLink.href = "/user_details/" + user.id;
+                detailsLink.textContent = "Details";
+                detailsLink.classList.add("btn", "btn-primary");
+                actionsCell.appendChild(detailsLink);
+                row.appendChild(actionsCell);
+
+                tableBody.appendChild(row);
+            });
+        }
+
+    </script>
+</div>
+</html>
