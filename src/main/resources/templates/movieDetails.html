@@ -591,14 +591,13 @@
                                 var allowedRoles = ["ROLE_ADMIN", "ROLE_MODERATOR"]; // Список разрешенных ролей
                                 var hasAllowedRole = userRoles.some(role => allowedRoles.includes(role.permissionRole));
                                 if (comment.userId === parseInt(currentUserId)) {
-                                    console.log("DDDDDD")
+
                                     var commentDiv = document.createElement("div");
                                     commentDiv.classList.add("float-end");
                                     commentDiv.appendChild(editButton);
                                     commentDiv.appendChild(deleteButton);
                                     cardFooter.appendChild(commentDiv);
                                 } else if (hasAllowedRole) {
-                                    console.log("WDWDWDWD")
                                     var commentDiv = document.createElement("div");
                                     commentDiv.classList.add("float-end");
                                     commentDiv.appendChild(deleteButton);
@@ -685,7 +684,6 @@
             httpRequest.setRequestHeader("Content-Type", "application/json");
             httpRequest.onreadystatechange = function () {
                 if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
-                    console.log("Комментарий успешно обновлен");
                     $('#editCommentModal').modal('hide');
                     loadComments();
                 }
@@ -697,12 +695,10 @@
         document.querySelector("#deleteCommentModal #deleteCommentBtn").addEventListener("click", function () {
             var commentId = document.getElementById("delete_comment_id").value;
             var httpRequest = new XMLHttpRequest();
-            console.log("Текущий идентификатор комментария: " + commentId);
             httpRequest.open("DELETE", "http://localhost:8080/api/comment/" + commentId, true);
             httpRequest.onreadystatechange = function () {
                 if (httpRequest.readyState === XMLHttpRequest.DONE) {
                     if (httpRequest.status === 200) {
-                        console.log("Комментарий успешно удален");
                         $('#deleteCommentModal').modal('hide');
                         loadComments();
                     } else {
